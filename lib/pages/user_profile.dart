@@ -1,68 +1,33 @@
 import 'package:flutter/material.dart';
-import 'edit_profile_page.dart';
 
-class ProfilePage extends StatefulWidget {
+class UserProfileCard extends StatelessWidget {
   final Map<String, dynamic> user;
-
-  const ProfilePage({super.key, required this.user});
-
-  @override
-  State<ProfilePage> createState() => _ProfilePageState();
-}
-
-class _ProfilePageState extends State<ProfilePage> {
-  late Map<String, dynamic> userData;
-
-  @override
-  void initState() {
-    super.initState();
-    userData = Map<String, dynamic>.from(widget.user);
-  }
-
-  void _editProfile() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EditProfilePage(
-          user: userData,
-          onSave: (updatedUser) {
-            setState(() {
-              userData = updatedUser;
-            });
-          },
-        ),
-      ),
-    );
-  }
+  const UserProfileCard({super.key, required this.user});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFFE4EC),
-      body: Center(
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      elevation: 5,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircleAvatar(
-              radius: 50,
-              backgroundImage: NetworkImage(userData['image']),
-              backgroundColor: Colors.pinkAccent,
+              backgroundImage: NetworkImage(user['image']),
+              radius: 40,
             ),
-            const SizedBox(height: 16),
-            Text(
-              userData['name'],
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
-            ),
+            const SizedBox(height: 10),
+            Text(user['name'], style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text('${user['age']} years old'),
+            Text(user['profession']),
             const SizedBox(height: 8),
-            Text("Age: ${userData['age']}"),
-            Text("Profession: ${userData['profession']}"),
-            Text("Interests: ${userData['interests'].join(', ')}"),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.edit, color: Colors.white),
-              label: const Text("Edit", style: TextStyle(color: Colors.white)),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.pinkAccent),
-              onPressed: _editProfile,
+            Wrap(
+              spacing: 6,
+              children: List.generate(user['interests'].length, (i) {
+                return Chip(label: Text(user['interests'][i]));
+              }),
             )
           ],
         ),

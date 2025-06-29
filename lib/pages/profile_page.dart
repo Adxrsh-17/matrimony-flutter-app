@@ -1,71 +1,52 @@
-// lib/pages/profile_page.dart
 import 'package:flutter/material.dart';
+import 'edit_profile_page.dart';
 
-class ProfilePage extends StatelessWidget {
-  final Map<String, dynamic> user;
+class ProfilePage extends StatefulWidget {
+  const ProfilePage({super.key});
 
-  const ProfilePage({super.key, required this.user});
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  Map<String, dynamic> user = {
+    'name': 'Priya Sharma',
+    'age': 22,
+    'profession': 'UI/UX Designer',
+  };
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('${user['name']}\'s Profile'),
-        backgroundColor: Colors.pinkAccent,
-        foregroundColor: Colors.white,
-      ),
+      appBar: AppBar(title: const Text("My Profile")),
       body: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            CircleAvatar(
-              radius: 60,
-              backgroundImage: NetworkImage(user['image']),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              user['name'],
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Age: ${user['age']}',
-              style: const TextStyle(fontSize: 18),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Profession: ${user['profession']}',
-              style: const TextStyle(fontSize: 18),
-            ),
-            const SizedBox(height: 20),
-            const Divider(thickness: 1.5),
+            const CircleAvatar(radius: 50, backgroundColor: Colors.pink),
             const SizedBox(height: 10),
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Interests:',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-            ),
-            const SizedBox(height: 10),
-            ...List<Widget>.from(
-              (user['interests'] as List).map(
-                    (interest) => Align(
-                  alignment: Alignment.centerLeft,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4.0),
-                    child: Text(
-                      '• $interest',
-                      style: const TextStyle(fontSize: 16),
+            Text(user['name'], style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            Text("${user['age']} years old"),
+            Text(user['profession']),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => EditProfilePage(
+                      user: user,
+                      onSave: (updatedUser) {
+                        setState(() {
+                          user = updatedUser;
+                        });
+                      },
                     ),
                   ),
-                ),
-              ),
-            ),
+                );
+              },
+              child: const Text("Edit Profile"),
+            )
           ],
         ),
       ),

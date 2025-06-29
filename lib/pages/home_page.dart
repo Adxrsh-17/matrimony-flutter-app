@@ -1,150 +1,90 @@
 import 'package:flutter/material.dart';
-import 'user_profile.dart';
+import 'matched_page.dart';
 import 'shortlist_page.dart';
+import 'profile_page.dart';
+import 'profile_list_page.dart'; // ✅ Correct import for All Profiles page
 
-class HomePage extends StatefulWidget {
+class HomePage extends StatelessWidget {
   const HomePage({super.key});
-
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  final List<Map<String, dynamic>> dummyUsers = [
-    {
-      'name': 'Priya Sharma',
-      'age': 22,
-      'profession': 'Designer',
-      'interests': ['UI/UX', 'Drawing'],
-      'image': 'assets/images/girl_cartoon.png',
-      'isLocal': true
-    },
-    {
-      'name': 'Ravi Kumar',
-      'age': 23,
-      'profession': 'Developer',
-      'interests': ['AI', 'Photography'],
-      'image': 'https://i.pravatar.cc/150?img=2',
-      'isLocal': false
-    },
-    {
-      'name': 'Sneha Reddy',
-      'age': 21,
-      'profession': 'Writer',
-      'interests': ['Reading', 'Storytelling'],
-      'image': 'assets/images/woman_face.png',
-      'isLocal': true
-    },
-    {
-      'name': 'Vikram Das',
-      'age': 24,
-      'profession': 'Developer',
-      'interests': ['UI/UX', 'Tech'],
-      'image': 'https://i.pravatar.cc/150?img=4',
-      'isLocal': false
-    },
-  ];
-
-  final List<Map<String, dynamic>> shortlistedUsers = [];
-
-  void _shortlistUser(Map<String, dynamic> user) {
-    if (!shortlistedUsers.contains(user)) {
-      setState(() {
-        shortlistedUsers.add(user);
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Shortlisted ${user['name']}!')),
-      );
-    }
-  }
-
-  void _navigateToShortlist() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ShortlistPage(shortlistedUsers: shortlistedUsers),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Matched Profiles'),
+        title: const Text("Matrimony Home"),
         backgroundColor: Colors.pinkAccent,
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.favorite),
-            tooltip: 'View Shortlist',
-            onPressed: _navigateToShortlist,
-          )
-        ],
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16.0),
-        itemCount: dummyUsers.length,
-        itemBuilder: (context, index) {
-          final user = dummyUsers[index];
-          return GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ProfilePage(user: user),
-                ),
-              );
-            },
-            child: Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 5,
-              margin: const EdgeInsets.symmetric(vertical: 10),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 40,
-                      backgroundImage: user['isLocal']
-                          ? AssetImage(user['image']) as ImageProvider
-                          : NetworkImage(user['image']),
+      body: const Center(
+        child: Text(
+          "Welcome to Matrimony Home",
+          style: TextStyle(fontSize: 18),
+        ),
+      ),
+      drawer: Drawer(
+        child: ListView(
+          children: [
+            const DrawerHeader(
+              decoration: BoxDecoration(color: Colors.pink),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundColor: Colors.white,
+                    backgroundImage: NetworkImage(
+                      'https://cdn-icons-png.flaticon.com/512/3177/3177440.png',
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            user['name'],
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text('Age: ${user['age']}'),
-                          Text('Profession: ${user['profession']}'),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Interests: ${user['interests'].join(', ')}',
-                            style: const TextStyle(fontStyle: FontStyle.italic),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.favorite_border, color: Colors.pink),
-                      onPressed: () => _shortlistUser(user),
-                    ),
-                  ],
-                ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    "Priya Sharma",
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                ],
               ),
             ),
-          );
-        },
+            ListTile(
+              leading: const Icon(Icons.favorite),
+              title: const Text("Matches"),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MatchedPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.bookmark),
+              title: const Text("Shortlisted"),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ShortlistPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.person),
+              title: const Text("My Profile"),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfilePage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.people),
+              title: const Text("All Profiles"),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfileListPage()),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

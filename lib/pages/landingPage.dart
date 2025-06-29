@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'welcome_page.dart';
+import 'login_page.dart';
 
 class LandingPage extends StatelessWidget {
   const LandingPage({super.key});
@@ -6,23 +8,28 @@ class LandingPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Club Matrimony'),
-        backgroundColor: Colors.pinkAccent,
-      ),
-      body: const Center(
+      backgroundColor: Colors.pinkAccent,
+      body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              'Welcome to Club Matrimony',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            const Text(
+              'Welcome to Matrimony 💑',
+              style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 20),
-            Text(
-              'Find your perfect match!',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+            const SizedBox(height: 30),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const WelcomePage()));
+              },
+              child: const Text('Get Started'),
             ),
+            TextButton(
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage()));
+              },
+              child: const Text("Already have an account? Login", style: TextStyle(color: Colors.white)),
+            )
           ],
         ),
       ),

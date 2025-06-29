@@ -1,44 +1,31 @@
-// lib/pages/welcome_page.dart
 import 'package:flutter/material.dart';
 import 'home_page.dart';
 
-class WelcomePage extends StatelessWidget {
+class WelcomePage extends StatefulWidget {
   const WelcomePage({super.key});
 
   @override
+  State<WelcomePage> createState() => _WelcomePageState();
+}
+
+class _WelcomePageState extends State<WelcomePage> {
+  @override
+  void initState() {
+    super.initState();
+    _navigate();
+  }
+
+  void _navigate() async {
+    await Future.delayed(const Duration(seconds: 2));
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomePage()));
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
+    return const Scaffold(
+      backgroundColor: Colors.pinkAccent,
       body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.favorite, size: 100, color: Colors.pinkAccent),
-              const SizedBox(height: 20),
-              const Text(
-                'Welcome to Club Matrimony',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 40),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.pinkAccent,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                ),
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const HomePage()),
-                  );
-                },
-                child: const Text('Get Started', style: TextStyle(color: Colors.white, fontSize: 18)),
-              )
-            ],
-          ),
-        ),
+        child: Text('Loading your match...', style: TextStyle(fontSize: 22, color: Colors.white)),
       ),
     );
   }
