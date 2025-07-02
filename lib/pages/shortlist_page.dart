@@ -6,8 +6,8 @@ class ShortlistPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Shortlisted Profiles")),
-      body: const Center(child: Text("No profiles shortlisted yet.")),
+      appBar: AppBar(title: const Text('Shortlisted Profiles')),
+      body: const Center(child: Text('No profiles shortlisted yet.')),
     );
   }
 }

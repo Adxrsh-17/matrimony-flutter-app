@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "714119315861",
+    "firebase_url": "https://matrimony-app-c680d-default-rtdb.firebaseio.com",
+    "project_id": "matrimony-app-c680d",
+    "storage_bucket": "matrimony-app-c680d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:714119315861:android:55c28d297ee53a1e13b69c",
+        "android_client_info": {
+          "package_name": "com.blessedunion.app.matrimony_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAhAm47SXJ0_LYvq3y-ux2D0_jvy9OCzYM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

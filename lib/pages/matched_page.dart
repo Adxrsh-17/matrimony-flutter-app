@@ -6,8 +6,8 @@ class MatchedPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Matched Profiles")),
-      body: const Center(child: Text("You have no matches yet.")),
+      appBar: AppBar(title: const Text('Matches')),
+      body: const Center(child: Text('Matched Page')),
     );
   }
 }
