@@ -1,34 +1,24 @@
 import 'package:flutter/material.dart';
-import 'pages/login_page.dart';
-import 'pages/home_page.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart'; // make sure this file exists
+import 'firebase_options.dart';
 
+import 'pages/login_page.dart';
+import 'pages/landingPage.dart';
+import 'pages/home_page.dart';
+import 'pages/user_profile.dart';
+import 'pages/register_page.dart';
+import 'pages/shortlist_page.dart';
 
-
-Future<void> main() async {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
   runApp(const MatrimonyApp());
 }
 
-class MatrimonyApp extends StatefulWidget {
+class MatrimonyApp extends StatelessWidget {
   const MatrimonyApp({super.key});
-
-  @override
-  State<MatrimonyApp> createState() => _MatrimonyAppState();
-}
-
-class _MatrimonyAppState extends State<MatrimonyApp> {
-  bool _isLoggedIn = false;
-
-  void _handleLogin() {
-    setState(() {
-      _isLoggedIn = true;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,11 +28,15 @@ class _MatrimonyAppState extends State<MatrimonyApp> {
       theme: ThemeData(
         primarySwatch: Colors.deepPurple,
       ),
-      home: _isLoggedIn
-          ? const HomePage()
-          : LoginPage(onLogin: _handleLogin), // Start at LoginPage
+      initialRoute: '/login',
+      routes: {
+        '/login': (context) => const LoginPage(),
+        '/landing': (context) => const LandingPage(),
+        '/home': (context) => const HomePage(),
+        '/profile': (context) => const UserProfilePage(),
+        '/register': (context) => const RegisterPage(),
+        '/shortlist': (context) => const ShortlistPage(),
+      },
     );
   }
 }
-
-

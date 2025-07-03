@@ -9,24 +9,34 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int _selectedIndex = 0;
-
-  final List<Widget> _pages = [
-    const ProfileListView(), // custom scrollable view
+  int _selectedTabIndex = 0;
+  final List<Widget> _tabPages = [
+    const ProfileListView(),
     const ShortlistPage(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_selectedIndex],
+      body: _tabPages[_selectedTabIndex],
       bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedTabIndex,
         selectedItemColor: Colors.deepPurple,
-        currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
+        unselectedItemColor: Colors.grey,
+        onTap: (index) {
+          setState(() {
+            _selectedTabIndex = index;
+          });
+        },
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Browse'),
-          BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Shortlist'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.people),
+            label: 'Browse',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite),
+            label: 'Shortlist',
+          ),
         ],
       ),
     );
