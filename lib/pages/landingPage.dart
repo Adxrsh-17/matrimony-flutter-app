@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'home_page.dart';
 import 'user_profile.dart';
 import 'shortlist_page.dart';
+import 'dart:ui';
+import 'package:google_fonts/google_fonts.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
@@ -26,22 +28,22 @@ class _LandingPageState extends State<LandingPage> {
       _selectedIndex = index;
       _title = title;
     });
-    Navigator.pop(context); // Close drawer
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("💍 Matrimony - Find Your Better Half"),
-        backgroundColor: Colors.deepPurple,
+        title: const Text("💍 Matrimony - Find Your Better Half"),
+        backgroundColor: const Color(0xFF8E24AA),
       ),
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
             const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.deepPurple),
+              decoration: BoxDecoration(color: Color(0xFF6A1B9A)),
               child: Text(
                 '👤 Welcome User',
                 style: TextStyle(color: Colors.white, fontSize: 24),
@@ -80,34 +82,59 @@ class WelcomeContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFFF8F4FF),
-      width: double.infinity,
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: const [
-          Text(
-            'Where Hearts Meet, Matches are Made',
-            style: TextStyle(
-              fontSize: 20,
-              color: Colors.deepPurple,
-              fontWeight: FontWeight.w600,
-            ),
-            textAlign: TextAlign.center,
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.asset(
+          'assets/images/background_image.jpg',
+          fit: BoxFit.cover,
+        ),
+        BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+          child: Container(
+            color: Colors.black.withOpacity(0.4),
           ),
-          SizedBox(height: 60),
-          Text(
-            'Find your perfect life partner\nwith trust, values, and love.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 24,
-              color: Colors.black87,
-              fontWeight: FontWeight.bold,
+        ),
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Welcome to Matrimony App',
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 30,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Where Hearts Meet, Matches are Made',
+                  style: GoogleFonts.caveat(
+                    fontSize: 24,
+                    color: Colors.pinkAccent,
+                    fontStyle: FontStyle.italic,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                Text(
+                  'Find your perfect life partner\nwith trust, values, and love.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.nunito(
+                    fontSize: 18,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

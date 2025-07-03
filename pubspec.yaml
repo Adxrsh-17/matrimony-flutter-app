@@ -1,6 +1,6 @@
 name: matrimony_app
 description: "MATRIMONY - ADARSH PRADEEP"
-publish_to: 'none' # Prevent publishing to pub.dev
+publish_to: 'none'
 
 version: 1.0.0+1
 
@@ -10,14 +10,12 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
   firebase_core: ^2.27.0
   cloud_firestore: ^4.15.0
   cupertino_icons: ^1.0.8
   google_fonts: ^6.1.0
   firebase_auth: ^4.17.4
   fluttertoast: ^8.2.4
-
 
 dev_dependencies:
   flutter_test:
@@ -28,6 +26,7 @@ flutter:
   uses-material-design: true
 
   assets:
+    - assets/images/background_image.jpg
     - assets/images/desire.png
     - assets/images/group.png
     - assets/images/logo.png
