@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'shortlist_page.dart';
+import 'profile_list_page.dart'; // 🔁 Import actual profile view
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -11,7 +12,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedTabIndex = 0;
   final List<Widget> _tabPages = [
-    const ProfileListView(),
+    const ProfileListPage(), // 🔁 Replaced ProfileListView
     const ShortlistPage(),
   ];
 
@@ -40,14 +41,5 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
     );
-  }
-}
-
-class ProfileListView extends StatelessWidget {
-  const ProfileListView({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text("Profile Cards List Goes Here"));
   }
 }

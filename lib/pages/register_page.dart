@@ -1,6 +1,10 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 import 'home_page.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -12,6 +16,7 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
+  final TextEditingController _searchController = TextEditingController();
 
   final firstNameController = TextEditingController();
   final lastNameController = TextEditingController();
@@ -24,6 +29,55 @@ class _RegisterPageState extends State<RegisterPage> {
   final languageController = TextEditingController();
   String selectedGender = 'Male';
 
+  File? _selectedImage;
+  String? _uploadedImageUrl;
+
+  // Sample list of profiles (replace with Firestore data)
+  List<Map<String, String>> profiles = [
+    {'name': 'mmm', 'age': '22', 'gender': 'Male', 'language': 'tamil', 'location': 'tamilnadu', 'pincode': '641035'},
+    {'name': 'girl', 'age': '24', 'gender': 'Female', 'language': 'tamil', 'location': 'coimbatore', 'pincode': '641035'},
+  ];
+  List<Map<String, String>> filteredProfiles = [];
+  List<Map<String, String>> shortlistedProfiles = [];
+
+  @override
+  void initState() {
+    super.initState();
+    filteredProfiles = List.from(profiles);
+    _searchController.addListener(_filterProfiles);
+  }
+
+  void _filterProfiles() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      filteredProfiles = profiles.where((profile) {
+        return profile['name']!.toLowerCase().contains(query) ||
+            profile['age']!.contains(query) ||
+            profile['gender']!.toLowerCase().contains(query) ||
+            profile['location']!.toLowerCase().contains(query);
+      }).toList();
+    });
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 70);
+    if (picked == null) return;
+
+    _selectedImage = File(picked.path);
+    final request = http.MultipartRequest('POST', Uri.parse('http://10.0.2.2:3000/upload'));
+    request.files.add(await http.MultipartFile.fromPath('file', _selectedImage!.path));
+    final response = await request.send();
+
+    if (response.statusCode == 200) {
+      final resData = await response.stream.bytesToString();
+      final jsonRes = json.decode(resData);
+      setState(() => _uploadedImageUrl = jsonRes['url']);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Image Uploaded')));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('❌ Image Upload Failed')));
+    }
+  }
+
   void _registerUser() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -35,7 +89,12 @@ class _RegisterPageState extends State<RegisterPage> {
 
       final uid = userCredential.user?.uid;
       if (uid != null) {
-        await FirebaseFirestore.instance.collection('users').doc(uid).set({
+        await FirebaseFirestore.instance
+            .collection('iot-matrimony')
+            .doc('Users')
+            .collection('Profile')
+            .doc(uid)
+            .set({
           'firstName': firstNameController.text,
           'lastName': lastNameController.text,
           'fatherName': fatherNameController.text,
@@ -45,6 +104,7 @@ class _RegisterPageState extends State<RegisterPage> {
           'location': locationController.text,
           'pincode': pincodeController.text,
           'language': languageController.text,
+          'profileImageUrl': _uploadedImageUrl ?? '',
         });
       }
 
@@ -63,33 +123,104 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
+  void _shortlistProfile(int index) {
+    setState(() {
+      final profile = filteredProfiles[index];
+      shortlistedProfiles.add(profile);
+      filteredProfiles.removeAt(index);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Profile Shortlisted')));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Matrimony Sign Up')),
+      appBar: AppBar(
+        title: const Text('Matrimony - Find Your Better Half'),
+        backgroundColor: Colors.deepPurple,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              showSearch(
+                context: context,
+                delegate: ProfileSearchDelegate(profiles, _searchController.text),
+              );
+            },
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              _field('First Name', firstNameController, validator: _validateName),
-              _field('Last Name (Optional)', lastNameController, required: false),
-              _field('Father\'s Name', fatherNameController, validator: _validateName),
-              _field('Email', emailController, type: TextInputType.emailAddress, validator: _validateEmail),
-              _field('Password', passwordController, type: TextInputType.visiblePassword, validator: _validatePassword),
-              _field('Age', ageController, type: TextInputType.number, validator: _validateAge),
-              _genderDropdown(),
-              _field('Location', locationController, validator: _validateAlphaOnly),
-              _field('Pincode', pincodeController, type: TextInputType.number, validator: _validatePincode),
-              _field('Language', languageController, validator: _validateAlphaOnly),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _registerUser,
-                child: const Text('Register'),
+        child: Column(
+          children: [
+            Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  _field('First Name', firstNameController, validator: _validateName),
+                  _field('Last Name (Optional)', lastNameController, required: false),
+                  _field('Father\'s Name', fatherNameController, validator: _validateName),
+                  _field('Email', emailController, type: TextInputType.emailAddress, validator: _validateEmail),
+                  _field('Password', passwordController, type: TextInputType.visiblePassword, validator: _validatePassword),
+                  _field('Age', ageController, type: TextInputType.number, validator: _validateAge),
+                  _genderDropdown(),
+                  _field('Location', locationController, validator: _validateAlphaOnly),
+                  _field('Pincode', pincodeController, type: TextInputType.number, validator: _validatePincode),
+                  _field('Language', languageController, validator: _validateAlphaOnly),
+                  const SizedBox(height: 12),
+
+                  if (_uploadedImageUrl != null)
+                    Column(children: [
+                      Image.network(_uploadedImageUrl!, height: 120),
+                      const SizedBox(height: 8),
+                    ]),
+
+                  ElevatedButton(
+                    onPressed: _pickAndUploadImage,
+                    child: const Text('Upload Profile Image'),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  ElevatedButton(
+                    onPressed: _registerUser,
+                    child: const Text('Register'),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 20),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: filteredProfiles.length,
+              itemBuilder: (context, index) {
+                final profile = filteredProfiles[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ListTile(
+                    leading: const CircleAvatar(
+                      backgroundImage: NetworkImage(
+                        'https://cdn-icons-png.flaticon.com/512/4140/4140048.png',
+                      ),
+                      radius: 26,
+                    ),
+                    title: Text(profile['name'] ?? 'Unknown'),
+                    subtitle: Text('Age: ${profile['age'] ?? 'N/A'}, ${profile['location'] ?? ''}'),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.favorite_border, color: Colors.deepPurple),
+                      onPressed: () => _shortlistProfile(index),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
         ),
       ),
     );
@@ -138,8 +269,6 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  // === VALIDATORS ===
-
   String? _validateName(String? value) {
     if (value == null || value.isEmpty) return 'Field is required';
     final nameRegex = RegExp(r'^[a-zA-Z\s]+$');
@@ -180,5 +309,81 @@ class _RegisterPageState extends State<RegisterPage> {
     final pincodeRegex = RegExp(r'^\d{6}$');
     if (!pincodeRegex.hasMatch(value)) return 'Enter valid 6-digit pincode';
     return null;
+  }
+}
+
+class ProfileSearchDelegate extends SearchDelegate<String> {
+  final List<Map<String, String>> profiles;
+  final String initialQuery;
+
+  ProfileSearchDelegate(this.profiles, this.initialQuery) {
+    query = initialQuery;
+  }
+
+  @override
+  List<Widget> buildActions(BuildContext context) {
+    return [
+      IconButton(
+        icon: const Icon(Icons.clear),
+        onPressed: () {
+          query = '';
+          showSuggestions(context);
+        },
+      ),
+    ];
+  }
+
+  @override
+  Widget buildLeading(BuildContext context) {
+    return IconButton(
+      icon: const Icon(Icons.arrow_back),
+      onPressed: () => close(context, ''),
+    );
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    final results = profiles.where((profile) {
+      return profile['name']!.toLowerCase().contains(query.toLowerCase()) ||
+          profile['age']!.contains(query) ||
+          profile['gender']!.toLowerCase().contains(query.toLowerCase()) ||
+          profile['location']!.toLowerCase().contains(query.toLowerCase());
+    }).toList();
+
+    return ListView.builder(
+      itemCount: results.length,
+      itemBuilder: (context, index) {
+        final profile = results[index];
+        return ListTile(
+          title: Text(profile['name'] ?? 'Unknown'),
+          subtitle: Text('Age: ${profile['age'] ?? 'N/A'}, ${profile['location'] ?? ''}'),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    final suggestions = profiles.where((profile) {
+      return profile['name']!.toLowerCase().contains(query.toLowerCase()) ||
+          profile['age']!.contains(query) ||
+          profile['gender']!.toLowerCase().contains(query.toLowerCase()) ||
+          profile['location']!.toLowerCase().contains(query.toLowerCase());
+    }).toList();
+
+    return ListView.builder(
+      itemCount: suggestions.length,
+      itemBuilder: (context, index) {
+        final profile = suggestions[index];
+        return ListTile(
+          title: Text(profile['name'] ?? 'Unknown'),
+          subtitle: Text('Age: ${profile['age'] ?? 'N/A'}, ${profile['location'] ?? ''}'),
+          onTap: () {
+            query = profile['name'] ?? '';
+            showResults(context);
+          },
+        );
+      },
+    );
   }
 }
