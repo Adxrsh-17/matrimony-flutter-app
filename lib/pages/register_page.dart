@@ -16,8 +16,6 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _searchController = TextEditingController();
-
   final firstNameController = TextEditingController();
   final lastNameController = TextEditingController();
   final fatherNameController = TextEditingController();
@@ -32,49 +30,35 @@ class _RegisterPageState extends State<RegisterPage> {
   File? _selectedImage;
   String? _uploadedImageUrl;
 
-  // Sample list of profiles (replace with Firestore data)
-  List<Map<String, String>> profiles = [
-    {'name': 'mmm', 'age': '22', 'gender': 'Male', 'language': 'tamil', 'location': 'tamilnadu', 'pincode': '641035'},
-    {'name': 'girl', 'age': '24', 'gender': 'Female', 'language': 'tamil', 'location': 'coimbatore', 'pincode': '641035'},
-  ];
-  List<Map<String, String>> filteredProfiles = [];
-  List<Map<String, String>> shortlistedProfiles = [];
-
-  @override
-  void initState() {
-    super.initState();
-    filteredProfiles = List.from(profiles);
-    _searchController.addListener(_filterProfiles);
-  }
-
-  void _filterProfiles() {
-    final query = _searchController.text.toLowerCase();
-    setState(() {
-      filteredProfiles = profiles.where((profile) {
-        return profile['name']!.toLowerCase().contains(query) ||
-            profile['age']!.contains(query) ||
-            profile['gender']!.toLowerCase().contains(query) ||
-            profile['location']!.toLowerCase().contains(query);
-      }).toList();
-    });
-  }
-
   Future<void> _pickAndUploadImage() async {
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 70);
     if (picked == null) return;
 
     _selectedImage = File(picked.path);
-    final request = http.MultipartRequest('POST', Uri.parse('http://10.0.2.2:3000/upload'));
-    request.files.add(await http.MultipartFile.fromPath('file', _selectedImage!.path));
-    final response = await request.send();
+
+    final bytes = await _selectedImage!.readAsBytes();
+    final base64Image = base64Encode(bytes);
+
+    final response = await http.post(
+      Uri.parse("https://upload.imagekit.io/api/v1/files/upload"),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: jsonEncode({
+        "file": "data:image/jpeg;base64,$base64Image",
+        "fileName": "profile_${DateTime.now().millisecondsSinceEpoch}.jpg",
+        "publicKey": "public_h+DukCXF+vw23bsUrE3vJJYwLxY=",
+        "folder": "/matrimony_profiles/",
+        "useUniqueFileName": true,
+      }),
+    );
 
     if (response.statusCode == 200) {
-      final resData = await response.stream.bytesToString();
-      final jsonRes = json.decode(resData);
-      setState(() => _uploadedImageUrl = jsonRes['url']);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Image Uploaded')));
+      final data = json.decode(response.body);
+      setState(() => _uploadedImageUrl = data['url']);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Image uploaded successfully')));
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('❌ Image Upload Failed')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('❌ Image upload failed')));
     }
   }
 
@@ -104,7 +88,7 @@ class _RegisterPageState extends State<RegisterPage> {
           'location': locationController.text,
           'pincode': pincodeController.text,
           'language': languageController.text,
-          'profileImageUrl': _uploadedImageUrl ?? '',
+          'photos': _uploadedImageUrl != null ? [_uploadedImageUrl] : [],
         });
       }
 
@@ -123,32 +107,12 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
-  void _shortlistProfile(int index) {
-    setState(() {
-      final profile = filteredProfiles[index];
-      shortlistedProfiles.add(profile);
-      filteredProfiles.removeAt(index);
-    });
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Profile Shortlisted')));
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Matrimony - Find Your Better Half'),
         backgroundColor: Colors.deepPurple,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              showSearch(
-                context: context,
-                delegate: ProfileSearchDelegate(profiles, _searchController.text),
-              );
-            },
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -169,56 +133,33 @@ class _RegisterPageState extends State<RegisterPage> {
                   _field('Pincode', pincodeController, type: TextInputType.number, validator: _validatePincode),
                   _field('Language', languageController, validator: _validateAlphaOnly),
                   const SizedBox(height: 12),
-
-                  if (_uploadedImageUrl != null)
-                    Column(children: [
-                      Image.network(_uploadedImageUrl!, height: 120),
-                      const SizedBox(height: 8),
-                    ]),
-
+                  if (_uploadedImageUrl != null && _uploadedImageUrl!.isNotEmpty)
+                    Column(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(
+                            _uploadedImageUrl!,
+                            height: 120,
+                            width: 120,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 60),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                    ),
                   ElevatedButton(
                     onPressed: _pickAndUploadImage,
                     child: const Text('Upload Profile Image'),
                   ),
-
                   const SizedBox(height: 20),
-
                   ElevatedButton(
                     onPressed: _registerUser,
                     child: const Text('Register'),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 20),
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: filteredProfiles.length,
-              itemBuilder: (context, index) {
-                final profile = filteredProfiles[index];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  elevation: 4,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: ListTile(
-                    leading: const CircleAvatar(
-                      backgroundImage: NetworkImage(
-                        'https://cdn-icons-png.flaticon.com/512/4140/4140048.png',
-                      ),
-                      radius: 26,
-                    ),
-                    title: Text(profile['name'] ?? 'Unknown'),
-                    subtitle: Text('Age: ${profile['age'] ?? 'N/A'}, ${profile['location'] ?? ''}'),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.favorite_border, color: Colors.deepPurple),
-                      onPressed: () => _shortlistProfile(index),
-                    ),
-                  ),
-                );
-              },
             ),
           ],
         ),
@@ -309,81 +250,5 @@ class _RegisterPageState extends State<RegisterPage> {
     final pincodeRegex = RegExp(r'^\d{6}$');
     if (!pincodeRegex.hasMatch(value)) return 'Enter valid 6-digit pincode';
     return null;
-  }
-}
-
-class ProfileSearchDelegate extends SearchDelegate<String> {
-  final List<Map<String, String>> profiles;
-  final String initialQuery;
-
-  ProfileSearchDelegate(this.profiles, this.initialQuery) {
-    query = initialQuery;
-  }
-
-  @override
-  List<Widget> buildActions(BuildContext context) {
-    return [
-      IconButton(
-        icon: const Icon(Icons.clear),
-        onPressed: () {
-          query = '';
-          showSuggestions(context);
-        },
-      ),
-    ];
-  }
-
-  @override
-  Widget buildLeading(BuildContext context) {
-    return IconButton(
-      icon: const Icon(Icons.arrow_back),
-      onPressed: () => close(context, ''),
-    );
-  }
-
-  @override
-  Widget buildResults(BuildContext context) {
-    final results = profiles.where((profile) {
-      return profile['name']!.toLowerCase().contains(query.toLowerCase()) ||
-          profile['age']!.contains(query) ||
-          profile['gender']!.toLowerCase().contains(query.toLowerCase()) ||
-          profile['location']!.toLowerCase().contains(query.toLowerCase());
-    }).toList();
-
-    return ListView.builder(
-      itemCount: results.length,
-      itemBuilder: (context, index) {
-        final profile = results[index];
-        return ListTile(
-          title: Text(profile['name'] ?? 'Unknown'),
-          subtitle: Text('Age: ${profile['age'] ?? 'N/A'}, ${profile['location'] ?? ''}'),
-        );
-      },
-    );
-  }
-
-  @override
-  Widget buildSuggestions(BuildContext context) {
-    final suggestions = profiles.where((profile) {
-      return profile['name']!.toLowerCase().contains(query.toLowerCase()) ||
-          profile['age']!.contains(query) ||
-          profile['gender']!.toLowerCase().contains(query.toLowerCase()) ||
-          profile['location']!.toLowerCase().contains(query.toLowerCase());
-    }).toList();
-
-    return ListView.builder(
-      itemCount: suggestions.length,
-      itemBuilder: (context, index) {
-        final profile = suggestions[index];
-        return ListTile(
-          title: Text(profile['name'] ?? 'Unknown'),
-          subtitle: Text('Age: ${profile['age'] ?? 'N/A'}, ${profile['location'] ?? ''}'),
-          onTap: () {
-            query = profile['name'] ?? '';
-            showResults(context);
-          },
-        );
-      },
-    );
   }
 }

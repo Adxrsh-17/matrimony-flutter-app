@@ -4,7 +4,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import './global_user_data.dart';
 
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({super.key});
@@ -27,6 +26,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
   String gender = 'Male';
   String email = '';
   List<String> photoUrls = [];
+  String? profileImageUrl;
+
   final picker = ImagePicker();
 
   @override
@@ -58,6 +59,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
       gender = data['gender'] ?? 'Male';
       email = data['email'] ?? '';
       photoUrls = List<String>.from(data['photos'] ?? []);
+      profileImageUrl = data['profileImageUrl'];
     }
 
     setState(() => _loading = false);
@@ -87,8 +89,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
       Uri.parse('https://upload.imagekit.io/api/v1/files/upload'),
     )
       ..fields['fileName'] = 'profile_${DateTime.now().millisecondsSinceEpoch}'
-      ..fields['publicKey'] = 'YOUR_IMAGEKIT_PUBLIC_API_KEY' // 🔁 replace with real
-      ..fields['uploadPreset'] = 'YOUR_UPLOAD_PRESET'        // if using preset
+      ..fields['publicKey'] = 'public_h+DukCXF+vw23bsUrE3vJJYwLxY='
       ..files.add(await http.MultipartFile.fromPath('file', picked.path));
 
     final response = await request.send();
@@ -149,7 +150,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
               CircleAvatar(
                 radius: 60,
                 backgroundImage: NetworkImage(
-                  gender == 'Female'
+                  profileImageUrl?.isNotEmpty == true
+                      ? profileImageUrl!
+                      : gender == 'Female'
                       ? 'https://cdn-icons-png.flaticon.com/512/847/847969.png'
                       : 'https://cdn-icons-png.flaticon.com/512/4140/4140048.png',
                 ),

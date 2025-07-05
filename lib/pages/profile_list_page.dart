@@ -14,7 +14,11 @@ class ProfileListPage extends StatelessWidget {
         leading: const Icon(Icons.menu, color: Colors.white),
         title: const Text(
           'Matrimony - Find Your Better Half',
-          style: TextStyle(fontFamily: 'Roboto', fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(
+            fontFamily: 'Roboto',
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
         actions: [
           IconButton(
@@ -41,9 +45,7 @@ class ProfileListPage extends StatelessWidget {
             );
           }
 
-          final profiles = snapshot.data!.docs
-              .where((doc) => doc.id != currentUid)
-              .toList();
+          final profiles = snapshot.data!.docs.where((doc) => doc.id != currentUid).toList();
 
           if (profiles.isEmpty) {
             return const Center(
@@ -59,14 +61,6 @@ class ProfileListPage extends StatelessWidget {
             itemCount: profiles.length,
             itemBuilder: (context, index) {
               final data = profiles[index].data() as Map<String, dynamic>;
-              final gender = data['gender']?.toString().toLowerCase() ?? 'unknown';
-              final seed = data['firstName'] ?? 'user';
-
-              // Load uploaded photo from ImageKit if available
-              final List<dynamic> photoList = data['photos'] ?? [];
-              final String imageUrl = photoList.isNotEmpty
-                  ? photoList.first.toString()
-                  : 'https://api.dicebear.com/7.x/${gender.contains('female') ? 'fun-emoji' : 'adventurer'}/png?seed=$seed';
 
               return Card(
                 elevation: 8,
@@ -81,14 +75,28 @@ class ProfileListPage extends StatelessWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // ✅ Display profile image from ImageKit or fallback avatar
-                      CircleAvatar(
-                        radius: 40,
-                        backgroundColor: Colors.grey[200],
-                        backgroundImage: NetworkImage(imageUrl),
-                      ),
+                      // 🖼️ Profile Picture
+                      if (data['photos'] != null &&
+                          data['photos'] is List &&
+                          data['photos'].isNotEmpty)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(
+                            data['photos'][0],
+                            height: 100,
+                            width: 100,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 60),
+                          ),
+                        )
+                      else
+                        const CircleAvatar(
+                          radius: 50,
+                          backgroundImage: AssetImage('assets/male.avif'), // fallback
+                        ),
                       const SizedBox(width: 16),
-                      // Profile Details
+
+                      // 📄 User Details
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,6 +118,8 @@ class ProfileListPage extends StatelessWidget {
                           ],
                         ),
                       ),
+
+                      // ❤️‍🔥 Action Icons
                       Column(
                         children: [
                           IconButton(
