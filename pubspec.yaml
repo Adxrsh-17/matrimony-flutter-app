@@ -8,21 +8,27 @@ environment:
   sdk: ">=3.0.0 <4.0.0"
 
 dependencies:
-  cloud_firestore: ^4.15.0
-  cupertino_icons: ^1.0.8
-  firebase_auth: ^4.17.4
-  firebase_core: ^2.27.0
   flutter:
     sdk: flutter
-  fluttertoast: ^8.2.4
+
+  # Firebase
+  firebase_core: ^2.27.0
+  firebase_auth: ^4.17.4
+  cloud_firestore: ^4.15.0
+
+  # UI & Fonts
+  cupertino_icons: ^1.0.8
   google_fonts: ^6.1.0
-  http: ^1.0.0
-  image_picker: ^1.0.2
+  fluttertoast: ^8.2.4
+
+  # Networking & Media
+  http: ^1.2.1
+  image_picker: ^1.0.4
 
 dev_dependencies:
-  flutter_lints: ^3.0.1
   flutter_test:
     sdk: flutter
+  flutter_lints: ^3.0.1
 
 flutter:
   uses-material-design: true
@@ -30,4 +36,3 @@ flutter:
   assets:
     - assets/images/background_image.jpg
     - assets/images/male_2.png
-

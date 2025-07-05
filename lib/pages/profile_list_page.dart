@@ -2,33 +2,81 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-class ProfileListPage extends StatelessWidget {
+class ProfileListPage extends StatefulWidget {
   const ProfileListPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+  State<ProfileListPage> createState() => _ProfileListPageState();
+}
 
+class _ProfileListPageState extends State<ProfileListPage> {
+  final currentUid = FirebaseAuth.instance.currentUser?.uid;
+  Set<String> shortlistedUids = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadShortlistedUids();
+  }
+
+  Future<void> _loadShortlistedUids() async {
+    if (currentUid == null) return;
+    final snapshot = await FirebaseFirestore.instance
+        .collection('iot-matrimony')
+        .doc('Users')
+        .collection('Shortlist')
+        .doc(currentUid)
+        .collection('Profiles')
+        .get();
+
+    setState(() {
+      shortlistedUids = snapshot.docs.map((doc) => doc.id).toSet();
+    });
+  }
+
+  Future<void> _toggleShortlist(String profileUid, Map<String, dynamic> data) async {
+    if (currentUid == null) return;
+
+    final ref = FirebaseFirestore.instance
+        .collection('iot-matrimony')
+        .doc('Users')
+        .collection('Shortlist')
+        .doc(currentUid)
+        .collection('Profiles')
+        .doc(profileUid);
+
+    final exists = await ref.get();
+
+    if (!exists.exists) {
+      await ref.set(data);
+      shortlistedUids.add(profileUid);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("✅ Added to Shortlist")),
+      );
+    } else {
+      await ref.delete();
+      shortlistedUids.remove(profileUid);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("❌ Removed from Shortlist")),
+      );
+    }
+
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: const Icon(Icons.menu, color: Colors.white),
-        title: const Text(
-          'Matrimony - Find Your Better Half',
-          style: TextStyle(
-            fontFamily: 'Roboto',
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
+        title: const Text("Matrimony - Find Your Better Half"),
+        centerTitle: true,
+        backgroundColor: Colors.deepPurple,
         actions: [
           IconButton(
-            icon: const Icon(Icons.search, color: Colors.white),
+            icon: const Icon(Icons.search),
             onPressed: () {},
-          ),
+          )
         ],
-        centerTitle: true,
-        backgroundColor: Colors.purple[700],
-        elevation: 4,
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -37,22 +85,17 @@ class ProfileListPage extends StatelessWidget {
             .collection('Profile')
             .snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.purple),
-              ),
-            );
+          if (!snapshot.hasData || snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
           }
 
-          final profiles = snapshot.data!.docs.where((doc) => doc.id != currentUid).toList();
+          final profiles = snapshot.data!.docs
+              .where((doc) => doc.id != currentUid)
+              .toList();
 
           if (profiles.isEmpty) {
             return const Center(
-              child: Text(
-                'No profiles available.',
-                style: TextStyle(fontSize: 18, color: Colors.grey),
-              ),
+              child: Text('No profiles available.'),
             );
           }
 
@@ -60,22 +103,25 @@ class ProfileListPage extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             itemCount: profiles.length,
             itemBuilder: (context, index) {
-              final data = profiles[index].data() as Map<String, dynamic>;
+              final doc = profiles[index];
+              final data = doc.data() as Map<String, dynamic>;
+              final profileUid = doc.id;
+              final isShortlisted = shortlistedUids.contains(profileUid);
 
               return Card(
-                elevation: 8,
+                elevation: 6,
                 margin: const EdgeInsets.symmetric(vertical: 10),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(15),
-                  side: BorderSide(color: Colors.purple[100]!, width: 1),
+                  side: BorderSide(color: Colors.deepPurple.shade100, width: 1),
                 ),
-                color: Colors.purple[50],
+                color: Colors.deepPurple.shade50,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 🖼️ Profile Picture
+                      // Profile Image
                       if (data['photos'] != null &&
                           data['photos'] is List &&
                           data['photos'].isNotEmpty)
@@ -86,30 +132,31 @@ class ProfileListPage extends StatelessWidget {
                             height: 100,
                             width: 100,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 60),
                           ),
                         )
                       else
                         const CircleAvatar(
                           radius: 50,
-                          backgroundImage: AssetImage('assets/male.avif'), // fallback
+                          backgroundImage: NetworkImage(
+                            'https://cdn-icons-png.flaticon.com/512/4140/4140048.png',
+                          ),
                         ),
                       const SizedBox(width: 16),
 
-                      // 📄 User Details
+                      // User Info
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '${data['firstName'] ?? ''}',
+                              '${data['firstName'] ?? 'Unknown'}',
                               style: const TextStyle(
-                                fontSize: 24,
+                                fontSize: 20,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.purple,
                               ),
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 10),
                             _buildDetailRow('Age', '${data['age'] ?? 'N/A'}'),
                             _buildDetailRow('Gender', '${data['gender'] ?? 'N/A'}'),
                             _buildDetailRow('Language', '${data['language'] ?? 'N/A'}'),
@@ -119,7 +166,7 @@ class ProfileListPage extends StatelessWidget {
                         ),
                       ),
 
-                      // ❤️‍🔥 Action Icons
+                      // Shortlist button
                       Column(
                         children: [
                           IconButton(
@@ -127,8 +174,13 @@ class ProfileListPage extends StatelessWidget {
                             onPressed: () {},
                           ),
                           IconButton(
-                            icon: const Icon(Icons.favorite, color: Colors.pink),
-                            onPressed: () {},
+                            icon: Icon(
+                              isShortlisted ? Icons.favorite : Icons.favorite_border,
+                              color: Colors.pink,
+                            ),
+                            onPressed: () {
+                              _toggleShortlist(profileUid, data);
+                            },
                           ),
                         ],
                       ),
@@ -145,25 +197,17 @@ class ProfileListPage extends StatelessWidget {
 
   Widget _buildDetailRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.purple,
-            ),
-          ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 16,
-              color: Colors.black87,
-            ),
-          ),
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.deepPurple)),
+          Text(value,
+              style: const TextStyle(fontSize: 14, color: Colors.black)),
         ],
       ),
     );

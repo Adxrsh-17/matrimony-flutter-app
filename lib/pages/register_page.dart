@@ -36,27 +36,22 @@ class _RegisterPageState extends State<RegisterPage> {
 
     _selectedImage = File(picked.path);
 
-    final bytes = await _selectedImage!.readAsBytes();
-    final base64Image = base64Encode(bytes);
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('https://api.imgbb.com/1/upload'),
+    )
+      ..fields['key'] = '1cca605f6e52fd853fcc704c1eaf99a1'
+      ..fields['image'] = base64Encode(await _selectedImage!.readAsBytes());
 
-    final response = await http.post(
-      Uri.parse("https://upload.imagekit.io/api/v1/files/upload"),
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: jsonEncode({
-        "file": "data:image/jpeg;base64,$base64Image",
-        "fileName": "profile_${DateTime.now().millisecondsSinceEpoch}.jpg",
-        "publicKey": "public_h+DukCXF+vw23bsUrE3vJJYwLxY=",
-        "folder": "/matrimony_profiles/",
-        "useUniqueFileName": true,
-      }),
-    );
-
+    final response = await request.send();
     if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      setState(() => _uploadedImageUrl = data['url']);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Image uploaded successfully')));
+      final body = await response.stream.bytesToString();
+      final data = json.decode(body);
+      final url = data['data']['url'];
+      if (url != null) {
+        setState(() => _uploadedImageUrl = url);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Image uploaded successfully')));
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('❌ Image upload failed')));
     }
@@ -90,16 +85,16 @@ class _RegisterPageState extends State<RegisterPage> {
           'language': languageController.text,
           'photos': _uploadedImageUrl != null ? [_uploadedImageUrl] : [],
         });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ Registration Successful')),
+        );
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomePage()),
+        );
       }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✅ Registration Successful')),
-      );
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomePage()),
-      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('❌ Registration failed: ${e.toString()}')),

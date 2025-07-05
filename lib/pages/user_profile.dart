@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -23,6 +24,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
   final locationController = TextEditingController();
   final pincodeController = TextEditingController();
   final languageController = TextEditingController();
+
   String gender = 'Male';
   String email = '';
   List<String> photoUrls = [];
@@ -37,29 +39,33 @@ class _UserProfilePageState extends State<UserProfilePage> {
   }
 
   Future<void> _fetchUserDetails() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) return;
 
-    final doc = await FirebaseFirestore.instance
-        .collection('iot-matrimony')
-        .doc('Users')
-        .collection('Profile')
-        .doc(uid)
-        .get();
+      final doc = await FirebaseFirestore.instance
+          .collection('iot-matrimony')
+          .doc('Users')
+          .collection('Profile')
+          .doc(uid)
+          .get();
 
-    final data = doc.data();
-    if (data != null) {
-      firstNameController.text = data['firstName'] ?? '';
-      lastNameController.text = data['lastName'] ?? '';
-      fatherNameController.text = data['fatherName'] ?? '';
-      ageController.text = data['age']?.toString() ?? '';
-      locationController.text = data['location'] ?? '';
-      pincodeController.text = data['pincode'] ?? '';
-      languageController.text = data['language'] ?? '';
-      gender = data['gender'] ?? 'Male';
-      email = data['email'] ?? '';
-      photoUrls = List<String>.from(data['photos'] ?? []);
-      profileImageUrl = data['profileImageUrl'];
+      final data = doc.data();
+      if (data != null) {
+        firstNameController.text = data['firstName'] ?? '';
+        lastNameController.text = data['lastName'] ?? '';
+        fatherNameController.text = data['fatherName'] ?? '';
+        ageController.text = data['age']?.toString() ?? '';
+        locationController.text = data['location'] ?? '';
+        pincodeController.text = data['pincode'] ?? '';
+        languageController.text = data['language'] ?? '';
+        gender = data['gender'] ?? 'Male';
+        email = data['email'] ?? '';
+        photoUrls = List<String>.from(data['photos'] ?? []);
+        profileImageUrl = data['profileImageUrl'] ?? '';
+      }
+    } catch (e) {
+      print("Error fetching profile: $e");
     }
 
     setState(() => _loading = false);
@@ -86,22 +92,30 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
     final request = http.MultipartRequest(
       'POST',
-      Uri.parse('https://upload.imagekit.io/api/v1/files/upload'),
+      Uri.parse('https://api.imgbb.com/1/upload'),
     )
-      ..fields['fileName'] = 'profile_${DateTime.now().millisecondsSinceEpoch}'
-      ..fields['publicKey'] = 'public_h+DukCXF+vw23bsUrE3vJJYwLxY='
-      ..files.add(await http.MultipartFile.fromPath('file', picked.path));
+      ..fields['key'] = '1cca605f6e52fd853fcc704c1eaf99a1'
+      ..files.add(await http.MultipartFile.fromPath('image', picked.path));
 
-    final response = await request.send();
-    if (response.statusCode == 200) {
+    try {
+      final response = await request.send();
       final body = await response.stream.bytesToString();
-      final url = RegExp(r'"url":"(.*?)"').firstMatch(body)?.group(1);
-      if (url != null) {
+      final data = json.decode(body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        final url = data['data']['url'];
         setState(() => photoUrls.add(url));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ Image uploaded')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('❌ Upload failed')),
+        );
       }
-    } else {
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('❌ Image upload failed')),
+        SnackBar(content: Text('❌ Error: ${e.toString()}')),
       );
     }
   }
@@ -112,25 +126,31 @@ class _UserProfilePageState extends State<UserProfilePage> {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
-    await FirebaseFirestore.instance
-        .collection('iot-matrimony')
-        .doc('Users')
-        .collection('Profile')
-        .doc(uid)
-        .update({
-      'firstName': firstNameController.text,
-      'lastName': lastNameController.text,
-      'fatherName': fatherNameController.text,
-      'age': int.tryParse(ageController.text),
-      'location': locationController.text,
-      'pincode': pincodeController.text,
-      'language': languageController.text,
-      'photos': photoUrls,
-    });
+    try {
+      await FirebaseFirestore.instance
+          .collection('iot-matrimony')
+          .doc('Users')
+          .collection('Profile')
+          .doc(uid)
+          .update({
+        'firstName': firstNameController.text,
+        'lastName': lastNameController.text,
+        'fatherName': fatherNameController.text,
+        'age': int.tryParse(ageController.text),
+        'location': locationController.text,
+        'pincode': pincodeController.text,
+        'language': languageController.text,
+        'photos': photoUrls,
+      });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('✅ Profile updated')),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('✅ Profile updated')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('❌ Failed to save: ${e.toString()}')),
+      );
+    }
   }
 
   @override
@@ -140,75 +160,121 @@ class _UserProfilePageState extends State<UserProfilePage> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('My Profile'), backgroundColor: Colors.deepPurple),
+      backgroundColor: const Color(0xFFF5F5FA),
+      appBar: AppBar(
+        backgroundColor: Colors.deepPurple,
+        title: const Text('My Profile', style: TextStyle(fontWeight: FontWeight.bold)),
+        centerTitle: true,
+      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
           child: Column(
             children: [
-              CircleAvatar(
-                radius: 60,
-                backgroundImage: NetworkImage(
-                  profileImageUrl?.isNotEmpty == true
-                      ? profileImageUrl!
-                      : gender == 'Female'
-                      ? 'https://cdn-icons-png.flaticon.com/512/847/847969.png'
-                      : 'https://cdn-icons-png.flaticon.com/512/4140/4140048.png',
+              Card(
+                elevation: 5,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 60,
+                        backgroundImage: NetworkImage(
+                          profileImageUrl != null && profileImageUrl!.isNotEmpty
+                              ? profileImageUrl!
+                              : gender == 'Female'
+                              ? 'https://cdn-icons-png.flaticon.com/512/847/847969.png'
+                              : 'https://cdn-icons-png.flaticon.com/512/4140/4140048.png',
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(email, style: const TextStyle(fontSize: 16, color: Colors.grey)),
+                      const SizedBox(height: 8),
+                      Chip(label: Text(gender), backgroundColor: Colors.deepPurple.shade100),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 24),
-              _editableField('First Name', firstNameController),
-              _editableField('Last Name', lastNameController, required: false),
-              _editableField('Father\'s Name', fatherNameController),
-              _staticField('Email', email),
-              _staticField('Gender', gender),
-              _editableField('Age', ageController, type: TextInputType.number),
-              _editableField('Location', locationController),
-              _editableField('Pincode', pincodeController, type: TextInputType.number),
-              _editableField('Language', languageController),
+              const SizedBox(height: 20),
+              Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      _editableField('First Name', firstNameController),
+                      _editableField('Last Name', lastNameController, required: false),
+                      _editableField("Father's Name", fatherNameController),
+                      _editableField('Age', ageController, type: TextInputType.number),
+                      _editableField('Location', locationController),
+                      _editableField('Pincode', pincodeController, type: TextInputType.number),
+                      _editableField('Language', languageController),
+                    ],
+                  ),
+                ),
+              ),
               const SizedBox(height: 20),
               Row(
                 children: [
-                  const Text('Photos', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text('Your Photos', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.add_a_photo, color: Colors.deepPurple),
                     onPressed: _uploadImage,
-                  )
+                  ),
                 ],
               ),
+              const SizedBox(height: 8),
               Wrap(
                 spacing: 12,
                 runSpacing: 12,
                 children: List.generate(4, (index) {
                   if (index < photoUrls.length) {
-                    return ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(photoUrls[index], width: 80, height: 80, fit: BoxFit.cover),
+                    return Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(photoUrls[index], width: 90, height: 90, fit: BoxFit.cover),
+                        ),
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: GestureDetector(
+                            onTap: () => setState(() => photoUrls.removeAt(index)),
+                            child: const Icon(Icons.cancel, color: Colors.red),
+                          ),
+                        ),
+                      ],
                     );
                   } else {
                     return Container(
-                      width: 80,
-                      height: 80,
+                      width: 90,
+                      height: 90,
                       decoration: BoxDecoration(
+                        color: Colors.white,
                         border: Border.all(color: Colors.deepPurple.shade200),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.image_outlined, size: 32),
+                      child: const Icon(Icons.image_outlined, size: 32, color: Colors.deepPurple),
                     );
                   }
                 }),
               ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _saveChanges,
-                child: const Text('Save'),
+              const SizedBox(height: 30),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.save),
+                label: const Text("Save Changes"),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.deepPurple,
                   padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                 ),
-              )
+                onPressed: _saveChanges,
+              ),
+              const SizedBox(height: 40),
             ],
           ),
         ),
@@ -225,26 +291,11 @@ class _UserProfilePageState extends State<UserProfilePage> {
         keyboardType: type,
         decoration: InputDecoration(
           labelText: label,
-          border: const OutlineInputBorder(),
+          floatingLabelStyle: const TextStyle(color: Colors.deepPurple),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         ),
-        validator: required
-            ? (val) => val == null || val.isEmpty ? 'Enter $label' : null
-            : null,
+        validator: required ? (val) => val == null || val.isEmpty ? 'Enter $label' : null : null,
       ),
-    );
-  }
-
-  Widget _staticField(String label, String value) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.deepPurple.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.deepPurple.shade100),
-      ),
-      child: Text('$label: $value', style: const TextStyle(fontSize: 16)),
     );
   }
 }

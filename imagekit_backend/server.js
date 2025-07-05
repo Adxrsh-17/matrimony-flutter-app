@@ -1,32 +1,23 @@
-const express = require('express');
-const crypto = require('crypto');
-const uuid = require('uuid');
+const express = require("express");
+const ImageKit = require("imagekit");
+const cors = require("cors");
 
 const app = express();
-const port = 3000;
+app.use(cors());
 
-// ✅ Your actual ImageKit private key
-const privateAPIKey = 'private_TdQoVJ9YCgopStQxDP19KdtEHQc=';
-
-// ✅ Your ImageKit URL endpoint
-const urlEndpoint = 'https://ik.imagekit.io/sdjEvhaJsdjkj/';
-
-app.get('/auth', (req, res) => {
-  const token = uuid.v4();
-  const expire = Math.floor(Date.now() / 1000) + 2400;
-  const signature = crypto
-    .createHmac('sha1', privateAPIKey)
-    .update(token + expire)
-    .digest('hex');
-
-  res.json({
-    token,
-    expire,
-    signature,
-    urlEndpoint
-  });
+const imagekit = new ImageKit({
+  publicKey: "your_public_api_key",
+  privateKey: "your_private_api_key",
+  urlEndpoint: "https://ik.imagekit.io/your_imagekit_id"
 });
 
-app.listen(port, () => {
-  console.log(`✅ ImageKit auth backend running on http://localhost:${port}`);
+// Endpoint to get authentication parameters
+app.get("/auth", (req, res) => {
+  const authParams = imagekit.getAuthenticationParameters();
+  res.json(authParams);
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`✅ Server running on port ${PORT}`);
 });
