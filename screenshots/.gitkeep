@@ -1,0 +1,17 @@
+# Screenshots Directory
+
+This directory should contain screenshots of the app for the README.
+
+Recommended screenshots:
+- home.png - Home/Welcome screen
+- browse.png - Browse profiles screen
+- chat.png - Chat interface
+- details.png - Profile details view
+- shortlist.png - Shortlisted profiles
+- profile.png - User profile screen
+
+Image recommendations:
+- Format: PNG or JPG
+- Resolution: 1080x1920 (mobile) or appropriate for your platform
+- Keep file sizes reasonable (< 500KB per image)
+
